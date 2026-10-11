@@ -1,0 +1,14 @@
+.build/
+bin/
+dist/
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+build/
+tests/
+.env
+.env.*
+.aws/
+.codex/
+.agents/
