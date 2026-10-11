@@ -14,6 +14,12 @@ ApplicationWindow {
     palette.text: Theme.text; palette.button: Theme.elevated; palette.buttonText: Theme.text
     palette.highlight: Theme.selection; palette.highlightedText: Theme.text
     property var appState: handoff.snapshotData
+    readonly property int pendingIncomingCount: {
+        var count = 0
+        for (var transfer of (appState.transfers || []))
+            if (transfer.direction === "incoming" && transfer.status === "pending") count++
+        return count
+    }
     property var selectedPeers: []
     property string filter: "all"
     property var expanded: ({})
@@ -72,10 +78,24 @@ ApplicationWindow {
             background: Rectangle { color: Theme.bg }
             Repeater { model: ["Peers", "Transfers", "Settings"]
                 TabButton {
+                    id: tabButton
                     required property string modelData
                     required property int index
-                    text: modelData; width: 100; height: 34
-                    contentItem: Text { textFormat: Text.PlainText; text: parent.text; color: tabs.currentIndex===index ? Theme.text : Theme.muted; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    text: modelData; width: 100 + (requestBadge.visible ? requestBadge.width + 6 : 0); height: 34
+                    Accessible.name: index === 1 && win.pendingIncomingCount > 0 ? "Transfers, " + win.pendingIncomingCount + " incoming requests awaiting approval" : text
+                    contentItem: Item {
+                        Row {
+                            anchors.centerIn: parent; spacing: 6
+                            Text { textFormat: Text.PlainText; text: tabButton.text; color: tabs.currentIndex===tabButton.index ? Theme.text : Theme.muted; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle {
+                                id: requestBadge; objectName: tabButton.index === 1 ? "pendingRequestsBadge" : ""
+                                visible: tabButton.index === 1 && win.pendingIncomingCount > 0
+                                width: Math.max(18, requestCount.implicitWidth + 8); height: width; radius: width / 2
+                                color: Theme.selection; border.color: Theme.accent; border.width: 1
+                                Text { id: requestCount; objectName: tabButton.index === 1 ? "pendingRequestsCount" : ""; anchors.centerIn: parent; textFormat: Text.PlainText; text: win.pendingIncomingCount > 99 ? "99+" : win.pendingIncomingCount; color: Theme.accent; font.pixelSize: 10; font.weight: Font.DemiBold }
+                            }
+                        }
+                    }
                     background: Rectangle { color: tabs.currentIndex===index ? Theme.panel : Theme.bg; border.color: Theme.line; Rectangle { anchors.bottom: parent.bottom; height: 2; width: parent.width; color: tabs.currentIndex===index ? Theme.accent : "transparent" } }
                 }
             }
@@ -256,7 +276,7 @@ ApplicationWindow {
                     }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Logs rotate automatically. Diagnostic bundles exclude names, filenames, paths, credentials, and detailed error text."; wrapMode:Text.Wrap; color:Theme.muted; font.pixelSize:11 }
                     Rectangle { Layout.fillWidth:true; Layout.leftMargin:18; Layout.rightMargin:18; height:1; color:Theme.line }
-                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.2")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
+                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.3")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Device identity: "+(appState.deviceId || "Starting…"); color:Theme.muted; font.pixelSize:10; wrapMode:Text.Wrap }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Closing the window keeps transfers running. Use the tray menu to quit.\nIncoming transfers always require your approval."; color:Theme.muted; font.pixelSize:11; lineHeight:1.5 }
                     Item { Layout.preferredHeight:12 }

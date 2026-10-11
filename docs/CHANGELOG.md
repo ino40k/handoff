@@ -1,5 +1,14 @@
 # Changes
 
+## 1.0.3
+
+Show a compact circled count of incoming requests awaiting approval beside the
+Transfers tab. It follows persisted transfer state, stays visible when viewing
+other tabs or after reopening the app, and clears only as requests are accepted,
+declined or canceled. Outgoing and already-approved transfers do not contribute.
+Both themes use the same layout; counts above 99 display as 99+ with the full
+count available to accessibility tools.
+
 ## 1.0.2
 
 Fix drag-and-drop file and folder sends being rejected as non-local files.
