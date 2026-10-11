@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=handoff
+Comment=Trusted peer-to-peer file transfers
+Exec=handoff %u
+Icon=handoff
+Terminal=false
+Categories=Network;FileTransfer;Qt;
+MimeType=x-scheme-handler/handoff;
+StartupNotify=true
