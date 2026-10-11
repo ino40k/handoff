@@ -9,6 +9,7 @@ import subprocess
 import sys
 import urllib.request
 import zipfile
+from windows_runtime import binding_closure
 ROOT=Path(__file__).resolve().parent.parent
 BUILD=ROOT/'.build'
 VERSION='3.13.16'
@@ -37,9 +38,10 @@ for filename,expected in runtime_lock.items():
 # Remove unused development tools, bindings and Qt modules; keep the complete
 # QtQuick/Qml tree and all its styles to avoid assuming internal dependencies.
 qt=BUNDLE/'runtime/Lib/site-packages/PySide6'
-keep_bindings={'QtCore','QtGui','QtNetwork','QtWidgets','QtQuick','QtQml','QtQuickControls2','QtSvg'}
+keep_bindings=binding_closure(qt)
 for binding in qt.glob('Qt*.pyd'):
     if binding.stem not in keep_bindings:binding.unlink()
+binding_closure(qt)  # Check the pruned payload before packaging it.
 for sub in ['include','typesystems','glue','scripts','qml/Qt3D','qml/QtQuick3D','qml/QtWebEngine','qml/QtCharts','qml/QtGraphs','qml/QtMultimedia','qml/QtLocation','qml/QtPositioning','qml/QtSensors','qml/QtWebView','qml/QtWebSockets','qml/QtDataVisualization']:
     shutil.rmtree(qt/sub,ignore_errors=True)
 for library in qt.glob('Qt6*.dll'):
@@ -58,11 +60,11 @@ shutil.copyfile(ROOT/'LICENSE',BUNDLE/'licenses/LICENSE-handoff')
 shutil.copyfile(ROOT/'docs/THIRD-PARTY.md',BUNDLE/'licenses/THIRD-PARTY.md')
 shutil.copyfile(BUNDLE/'runtime/LICENSE.txt',BUNDLE/'licenses/LICENSE-Python.txt')
 subprocess.run([sys.executable,str(ROOT/'scripts/collect-go-licenses.py'),str(BUNDLE/'licenses/go')],check=True)
-(BUNDLE/'README.txt').write_text('handoff 1.0.5 — Windows 11 x64\n\nExtract this entire folder, then run handoff.exe. No Python, Qt, Go or Tailscale installation is required.\nUse the tray menu to quit. Close handoff before replacing this folder with a newer version.\nThe device identity, trusted peers and transfer state are stored separately in %LOCALAPPDATA%/handoff.\nWindows runtime integration requires testing on Windows 11.\nIf startup fails: open a terminal here and run runtime\\python.exe frontend\\main.py.\n',encoding='utf-8')
+(BUNDLE/'README.txt').write_text('handoff 1.0.6 — Windows 11 x64\n\nExtract this entire folder, then run handoff.exe. No Python, Qt, Go or Tailscale installation is required.\nUse the tray menu to quit. Close handoff before replacing this folder with a newer version.\nThe device identity, trusted peers and transfer state are stored separately in %LOCALAPPDATA%/handoff.\nWindows runtime integration requires testing on Windows 11.\nIf startup fails: open a terminal here and run runtime\\python.exe frontend\\main.py.\n',encoding='utf-8')
 checksums={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in WHEELS.glob('*.whl')}
 checksums[archive.name]=PYTHON_SHA256
 (BUNDLE/'licenses/runtime-checksums.json').write_text(json.dumps(checksums,indent=2))
-archive_out=ROOT/'dist/handoff-1.0.5-windows-x64-portable.zip'
+archive_out=ROOT/'dist/handoff-1.0.6-windows-x64-portable.zip'
 with zipfile.ZipFile(archive_out,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
     for f in BUNDLE.rglob('*'):
         if f.is_file():z.write(f,f.relative_to(BUNDLE.parent))

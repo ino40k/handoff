@@ -1,5 +1,17 @@
 # Changes
 
+## 1.0.6
+
+Restore the Windows QtOpenGL Python binding needed by QtQuickControls2. The
+Windows packager now retains the transitive binding import graph and checks it
+after pruning, catching this missing module in the old 1.0.5 bundle.
+
+Capture Windows Python stdout/stderr from a hidden console runtime into rotated,
+redacted launcher.jsonl logs before Qt imports. The failure dialog gives the log
+path, and launcher/frontend startup events share a correlation ID. Split pipe
+fragments are rejoined before redaction; oversized lines are discarded safely.
+Device identities, peers, saved approvals and transfer protocol are unchanged.
+
 ## 1.0.5
 
 Select Qt Quick's Fusion style on Windows before loading QML controls. The

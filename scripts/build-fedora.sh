@@ -13,5 +13,5 @@ python3 -m venv .build/venv
 .build/venv/bin/python scripts/collect-licenses.py dist/handoff/_internal
 rpmbuild -bb --define "_topdir $root/.build/rpm" --define "bundle_dir $root/dist/handoff" --define "source_dir $root" --define '__brp_strip /bin/true' --define '__brp_strip_comment_note /bin/true' --define '__brp_python_bytecompile /bin/true' packaging/handoff.rpm.spec
 cp .build/rpm/RPMS/x86_64/handoff-*.rpm dist/
-tar -C dist -czf dist/handoff-1.0.5-linux-x86_64.tar.gz handoff
+tar -C dist -czf dist/handoff-1.0.6-linux-x86_64.tar.gz handoff
 sha256sum dist/*.rpm dist/*.tar.gz > dist/SHA256SUMS-linux.txt

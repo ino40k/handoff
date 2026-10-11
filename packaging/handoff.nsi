@@ -3,7 +3,7 @@ Target amd64-unicode
 !include "MUI2.nsh"
 !include "x64.nsh"
 !define APP "handoff"
-!define VERSION "1.0.5"
+!define VERSION "1.0.6"
 !ifndef BUNDLE
 !define BUNDLE "../dist/handoff-windows"
 !endif

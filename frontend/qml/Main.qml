@@ -287,7 +287,7 @@ ApplicationWindow {
                     }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Logs rotate automatically. Diagnostic bundles exclude names, filenames, paths, credentials, and detailed error text."; wrapMode:Text.Wrap; color:Theme.muted; font.pixelSize:11 }
                     Rectangle { Layout.fillWidth:true; Layout.leftMargin:18; Layout.rightMargin:18; height:1; color:Theme.line }
-                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.5")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
+                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.6")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Device identity: "+(appState.deviceId || "Starting…"); color:Theme.muted; font.pixelSize:10; wrapMode:Text.Wrap }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Closing the window keeps transfers running. Use the tray menu to quit.\nIncoming transfers always require your approval."; color:Theme.muted; font.pixelSize:11; lineHeight:1.5 }
                     Item { Layout.preferredHeight:12 }

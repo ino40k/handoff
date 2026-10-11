@@ -51,12 +51,19 @@ These same-host live tests prove actual tailcat transport and relay fallback;
 they do not certify NAT behavior across the Fedora/Windows networks. Test the
 following on the VM before relying on Windows integration.
 
+The Windows payload can also be checked on Fedora or Windows with
+`python scripts/check-windows-runtime.py dist/handoff-windows`. It verifies the
+transitive PySide binding dependencies and the Fusion style module, without
+claiming a Windows runtime test. Launcher log tests cover fragmented secrets,
+final traceback lines, oversized output and retention independently of Windows.
+
 ## Windows VM acceptance
 
 1. Copy the setup EXE or portable ZIP, extract/install, and open `handoff.exe`.
    For an import/Qt startup failure, run `runtime\python.exe frontend\main.py`
    from the portable folder and collect the displayed error. No developer runtime
-   should otherwise be needed.
+   should otherwise be needed. Launcher errors are also saved automatically to
+   `%LOCALAPPDATA%\handoff\logs\launcher.jsonl`, including Qt import failures.
 2. Give Fedora and Windows different names. Pair with an invitation and approve
    on both sides. Their device IDs must differ. Disable the VM's Tailscale client
    during the actual transfer test to confirm it is not the application transport.
