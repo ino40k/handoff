@@ -8,7 +8,7 @@ traffic upgrades to encrypted direct UDP when possible.
 
 ## Install and use
 
-Build artifacts are in `dist/`:
+Download installers and portable builds from [GitHub Releases](https://github.com/ino40k/handoff/releases/latest). Local builds write their artifacts to `dist/`:
 
 * **Fedora:** `handoff-1.0.1-1.fc44.x86_64.rpm` — install with
   `sudo dnf install ./dist/handoff-1.0.1-1.fc44.x86_64.rpm`, then open **handoff**
@@ -57,11 +57,11 @@ python3 -m venv .venv
 .venv/bin/python frontend/main.py
 ```
 
-`./scripts/build-fedora.sh` builds the frozen Qt/Python distribution and RPM.
+`bash scripts/build-fedora.sh` builds the frozen Qt/Python distribution and RPM.
 It requires `rpmbuild`, the Go toolchain and Python venv support. Set `GO` to a
 nonstandard Go executable if necessary.
 
-`./scripts/build-windows-cross.sh` builds the actual Windows portable ZIP and
+`bash scripts/build-windows-cross.sh` builds the actual Windows portable ZIP and
 NSIS installer **on Fedora 44**. It downloads pinned Windows Qt wheels, verifies
 the SHA-256 of embedded Python **3.13.16**, cross-compiles Go, and extracts the
 Fedora NSIS **3.11** compiler into the build directory. It does not install
