@@ -1,5 +1,13 @@
 # Changes
 
+## 1.0.5
+
+Select Qt Quick's Fusion style on Windows before loading QML controls. The
+native Windows style drew bright dropdown backgrounds and a separate native
+hover overlay on custom buttons, ignoring the application theme. Fusion follows
+the handoff palette and custom button states; Fedora's existing style is left
+unchanged. The selected Quick style is recorded in startup diagnostics.
+
 ## 1.0.4
 
 Give navigation a separate inset strip below the device header with restrained

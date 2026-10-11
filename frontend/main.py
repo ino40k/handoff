@@ -10,14 +10,20 @@ from PySide6.QtCore import QLockFile, QStandardPaths, QTimer, QUrl, Qt, qInstall
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from handoff.bridge import Bridge, setup_logging, redact
 from handoff.platform import Notifications, windows_identity, windows_protocol
 
 def main():
+    # The native Windows Quick style adds its own button hover overlay and
+    # ignores custom ComboBox backgrounds. QWidget's setStyle below does not
+    # select a Qt Quick style. Choose Fusion before loading any QML controls.
+    if sys.platform == "win32":
+        QQuickStyle.setStyle("Fusion")
     app = QApplication(sys.argv)
     app.setApplicationName("handoff")
-    app.setApplicationVersion("1.0.4")
+    app.setApplicationVersion("1.0.5")
     app.setQuitOnLastWindowClosed(False)
     app.setStyle("Fusion")
     windows_identity()
@@ -112,6 +118,7 @@ def main():
     app.aboutToQuit.connect(bridge.notifications.close)
     app.aboutToQuit.connect(bridge.close)
     bridge.log("startup", "frontend_start")
+    bridge.log("startup", "quick_style_" + QQuickStyle.name().lower())
     code = app.exec()
     server.close(); lock.unlock()
     return code
