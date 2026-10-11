@@ -10,15 +10,15 @@ traffic upgrades to encrypted direct UDP when possible.
 
 Download installers and portable builds from [GitHub Releases](https://github.com/ino40k/handoff/releases/latest). Local builds write their artifacts to `dist/`:
 
-* **Fedora:** `handoff-1.0.1-1.fc44.x86_64.rpm` — install with
-  `sudo dnf install ./dist/handoff-1.0.1-1.fc44.x86_64.rpm`, then open **handoff**
+* **Fedora:** `handoff-1.0.2-1.fc44.x86_64.rpm` — install with
+  `sudo dnf install ./dist/handoff-1.0.2-1.fc44.x86_64.rpm`, then open **handoff**
   from the application launcher.
-* **Windows 11:** `handoff-1.0.1-windows-x64-setup.exe` — per-user installer,
+* **Windows 11:** `handoff-1.0.2-windows-x64-setup.exe` — per-user installer,
   Start menu integration, notification shortcut, protocol handler, and uninstaller.
-* **Windows portable:** `handoff-1.0.1-windows-x64-portable.zip` — extract the
+* **Windows portable:** `handoff-1.0.2-windows-x64-portable.zip` — extract the
   **entire folder**, then run `handoff.exe`. Keep the runtime and frontend folders
   alongside it. Python, Go, Qt, and Tailscale are not installation prerequisites.
-* **Linux portable:** `handoff-1.0.1-linux-x86_64.tar.gz` — extract and run
+* **Linux portable:** `handoff-1.0.2-linux-x86_64.tar.gz` — extract and run
   `handoff/handoff` on Fedora with the normal desktop system libraries installed.
 
 Choose a device name and receiving folder in the first-launch wizard. Add a

@@ -1,5 +1,14 @@
 # Changes
 
+## 1.0.2
+
+Fix drag-and-drop file and folder sends being rejected as non-local files.
+QML supplies QUrl objects; the frontend now preserves them instead of parsing
+their Python representation. Spaces, Unicode and encoded filename characters
+are preserved. Mixed local/remote drops are rejected as a whole. Drop decisions
+are logged without recording paths. Identity, peers, protocol and saved
+transfers remain compatible with 1.0.1.
+
 ## 1.0.1
 
 Fix the frontend crash when Send opens a file picker and a presence update

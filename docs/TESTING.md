@@ -13,6 +13,8 @@ full development workspace. The Go tests under `backend/` remain in the source.
 .venv/bin/python tests/ui_smoke.py
 .venv/bin/python tests/picker_regression.py
 .build/venv/bin/python tests/picker_regression.py --bundle dist/handoff
+.build/venv/bin/python tests/drop_regression.py
+.build/venv/bin/python tests/drop_regression.py --bundle dist/handoff
 dbus-run-session -- .venv/bin/python tests/notification_smoke.py
 .venv/bin/python tests/instance_smoke.py
 ```
@@ -40,6 +42,8 @@ Validated on Fedora 44 with Go 1.27.1, Python 3.14 and PySide6 6.11.2:
   links, reserved names, authentication, revocation, pause, cancel and ordering.
 * Peer-row Send with changing snapshots while a picker is open, cancellation,
   file/folder selection, retained recipients, and explicit custom-destination approval.
+* Native QtQuick peer-row drops of files, folders and multiple selections with
+  spaces, Unicode and encoded filename characters; remote and mixed URL rejection.
 * Race detector for core and live networking, QML load and both themes,
   notification activation, and frozen frontend/embedded engine startup.
 

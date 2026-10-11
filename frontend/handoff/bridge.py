@@ -268,12 +268,19 @@ class Bridge(QObject):
     def dropSend(self, peer_id, urls):
         paths = []
         for url in urls:
-            qurl = QUrl(str(url))
-            if qurl.isLocalFile():
-                paths.append(qurl.toLocalFile())
+            # QML DropEvent.urls reaches PySide as QUrl objects. str(QUrl)
+            # is a Python representation, not the URL's encoded text.
+            qurl = QUrl(url) if isinstance(url, QUrl) else QUrl(str(url))
+            if not qurl.isValid() or not qurl.isLocalFile() or not qurl.toLocalFile():
+                self.log("drag_drop", "drop_rejected", detail="non_local_or_invalid_url")
+                self.error.emit("Drop local files or folders")
+                return
+            paths.append(qurl.toLocalFile())
         if paths:
+            self.log("drag_drop", "drop_send_requested")
             self.call("send", {"paths": paths, "peers": [peer_id]})
         else:
+            self.log("drag_drop", "drop_rejected", detail="empty_drop")
             self.error.emit("Drop local files or folders")
 
     @Slot(str, str)
