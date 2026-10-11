@@ -1,5 +1,13 @@
 # Changes
 
+## 1.0.4
+
+Give navigation a separate inset strip below the device header with restrained
+selected and hover states. Correct the custom tabs' implicit height, which Qt
+used to shift them upward over the logo and title. Reserve stable header and
+navigation heights so resizing cannot cause overlap. The request badge and
+keyboard navigation remain available in both themes.
+
 ## 1.0.3
 
 Show a compact circled count of incoming requests awaiting approval beside the

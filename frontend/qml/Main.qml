@@ -62,7 +62,8 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent; spacing: 0
         Rectangle {
-            Layout.fillWidth: true; implicitHeight: 44; color: Theme.panel
+            objectName: "appHeader"
+            Layout.fillWidth: true; Layout.minimumHeight: 44; Layout.maximumHeight: 44; implicitHeight: 44; color: Theme.panel
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 13; anchors.rightMargin: 13; spacing: 9
                 Image { source: assetPath + "handoff.svg"; sourceSize.width: 25; sourceSize.height: 25; Layout.preferredWidth: 25; Layout.preferredHeight: 25 }
@@ -73,30 +74,40 @@ ApplicationWindow {
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
         }
-        TabBar {
-            id: tabs; Layout.fillWidth: true; implicitHeight: 34
-            background: Rectangle { color: Theme.bg }
-            Repeater { model: ["Peers", "Transfers", "Settings"]
-                TabButton {
-                    id: tabButton
-                    required property string modelData
-                    required property int index
-                    text: modelData; width: 100 + (requestBadge.visible ? requestBadge.width + 6 : 0); height: 34
-                    Accessible.name: index === 1 && win.pendingIncomingCount > 0 ? "Transfers, " + win.pendingIncomingCount + " incoming requests awaiting approval" : text
-                    contentItem: Item {
-                        Row {
-                            anchors.centerIn: parent; spacing: 6
-                            Text { textFormat: Text.PlainText; text: tabButton.text; color: tabs.currentIndex===tabButton.index ? Theme.text : Theme.muted; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                            Rectangle {
-                                id: requestBadge; objectName: tabButton.index === 1 ? "pendingRequestsBadge" : ""
-                                visible: tabButton.index === 1 && win.pendingIncomingCount > 0
-                                width: Math.max(18, requestCount.implicitWidth + 8); height: width; radius: width / 2
-                                color: Theme.selection; border.color: Theme.accent; border.width: 1
-                                Text { id: requestCount; objectName: tabButton.index === 1 ? "pendingRequestsCount" : ""; anchors.centerIn: parent; textFormat: Text.PlainText; text: win.pendingIncomingCount > 99 ? "99+" : win.pendingIncomingCount; color: Theme.accent; font.pixelSize: 10; font.weight: Font.DemiBold }
+        Rectangle {
+            objectName: "appNavigation"
+            Layout.fillWidth: true; Layout.minimumHeight: 38; Layout.maximumHeight: 38; implicitHeight: 38
+            color: Theme.bg
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
+            TabBar {
+                id: tabs; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                anchors.leftMargin: 12; anchors.rightMargin: 12; anchors.topMargin: 4
+                height: 32; implicitHeight: 32; spacing: 2; padding: 0
+                background: Item { }
+                Repeater { model: ["Peers", "Transfers", "Settings"]
+                    TabButton {
+                        id: tabButton
+                        required property string modelData
+                        required property int index
+                        objectName: "navigationTab" + index
+                        text: modelData; width: 100 + (requestBadge.visible ? requestBadge.width + 6 : 0)
+                        implicitHeight: 32; height: 32; padding: 2
+                        Accessible.name: index === 1 && win.pendingIncomingCount > 0 ? "Transfers, " + win.pendingIncomingCount + " incoming requests awaiting approval" : text
+                        contentItem: Item {
+                            Row {
+                                anchors.centerIn: parent; spacing: 6
+                                Text { textFormat: Text.PlainText; text: tabButton.text; color: tabs.currentIndex===tabButton.index ? Theme.text : Theme.muted; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle {
+                                    id: requestBadge; objectName: tabButton.index === 1 ? "pendingRequestsBadge" : ""
+                                    visible: tabButton.index === 1 && win.pendingIncomingCount > 0
+                                    width: Math.max(18, requestCount.implicitWidth + 8); height: width; radius: width / 2
+                                    color: Theme.selection; border.color: Theme.accent; border.width: 1
+                                    Text { id: requestCount; objectName: tabButton.index === 1 ? "pendingRequestsCount" : ""; anchors.centerIn: parent; textFormat: Text.PlainText; text: win.pendingIncomingCount > 99 ? "99+" : win.pendingIncomingCount; color: Theme.accent; font.pixelSize: 10; font.weight: Font.DemiBold }
+                                }
                             }
                         }
+                        background: Rectangle { color: tabButton.checked ? Theme.panel : tabButton.hovered ? Theme.elevated : "transparent"; Rectangle { anchors.bottom: parent.bottom; height: 2; width: parent.width; color: tabButton.checked ? Theme.accent : "transparent" } }
                     }
-                    background: Rectangle { color: tabs.currentIndex===index ? Theme.panel : Theme.bg; border.color: Theme.line; Rectangle { anchors.bottom: parent.bottom; height: 2; width: parent.width; color: tabs.currentIndex===index ? Theme.accent : "transparent" } }
                 }
             }
         }
@@ -276,7 +287,7 @@ ApplicationWindow {
                     }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Logs rotate automatically. Diagnostic bundles exclude names, filenames, paths, credentials, and detailed error text."; wrapMode:Text.Wrap; color:Theme.muted; font.pixelSize:11 }
                     Rectangle { Layout.fillWidth:true; Layout.leftMargin:18; Layout.rightMargin:18; height:1; color:Theme.line }
-                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.3")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
+                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.4")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Device identity: "+(appState.deviceId || "Starting…"); color:Theme.muted; font.pixelSize:10; wrapMode:Text.Wrap }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Closing the window keeps transfers running. Use the tray menu to quit.\nIncoming transfers always require your approval."; color:Theme.muted; font.pixelSize:11; lineHeight:1.5 }
                     Item { Layout.preferredHeight:12 }

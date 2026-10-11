@@ -17,7 +17,7 @@ from handoff.platform import Notifications, windows_identity, windows_protocol
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("handoff")
-    app.setApplicationVersion("1.0.3")
+    app.setApplicationVersion("1.0.4")
     app.setQuitOnLastWindowClosed(False)
     app.setStyle("Fusion")
     windows_identity()
