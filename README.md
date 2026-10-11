@@ -38,12 +38,30 @@ its next file. Sending and receiving are independently sequential.
 Closing the window hides it. Transfers continue in the tray; use its **Quit
 handoff** action to stop. Launching again activates the existing instance.
 
+## Screenshots
+
+Captured from the current interface on Fedora using example devices and files.
+
+**Peers · dark theme** — trusted devices, connection status, and file drop targets.
+
+![Peers tab with example devices connected directly, through a relay, and offline](docs/screenshots/peers-dark.png)
+
+**Transfers · dark theme** — an expanded folder transfer, an incoming request
+awaiting approval, a queued file, and completed history.
+
+![Transfers tab with folder contents, progress, queue states, and an incoming request badge](docs/screenshots/transfers-dark.png)
+
+**Settings · light theme** — receiving preferences, startup, themes, and diagnostics.
+
+![Settings tab showing the light theme, receiving directory, and diagnostic actions](docs/screenshots/settings-light.png)
+
 ## Source and builds
 
 `backend/` contains the durable state, transfer protocol, tailcat integration,
 and Windows launcher. `frontend/` contains the PySide6 host and QML interface.
 `assets/` contains original SVG, PNG and ICO artwork. `packaging/` and `scripts/`
-contain the self-contained RPM and Windows build procedures.
+contain the self-contained RPM and Windows build procedures. Regenerate the
+example screenshots with `.venv/bin/python scripts/render-readme-screenshots.py`.
 
 Development requires Go **1.27.1** and Python with PySide6 **6.11.2**.
 The tailcat pin is
