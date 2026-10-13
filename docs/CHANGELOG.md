@@ -1,5 +1,11 @@
 # Changes
 
+## 1.0.7
+
+Remove the readiness text and status dot from the application header. Peer
+connection status and network diagnostics remain available in their existing
+views. Refresh the generic README screenshots to match.
+
 ## 1.0.6
 
 Restore the Windows QtOpenGL Python binding needed by QtQuickControls2. The

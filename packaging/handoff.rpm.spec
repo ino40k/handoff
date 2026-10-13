@@ -1,5 +1,5 @@
 Name: handoff
-Version: 1.0.6
+Version: 1.0.7
 Release: 1%{?dist}
 Summary: Trusted peer-to-peer desktop file transfers
 License: BSD-3-Clause AND LGPL-3.0-only AND GPL-2.0-only WITH Bootloader-exception

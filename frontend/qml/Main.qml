@@ -69,8 +69,6 @@ ApplicationWindow {
                 Image { source: assetPath + "handoff.svg"; sourceSize.width: 25; sourceSize.height: 25; Layout.preferredWidth: 25; Layout.preferredHeight: 25 }
                 Text { textFormat: Text.PlainText; text: "handoff"; color: Theme.text; font.pixelSize: 16; font.weight: Font.DemiBold }
                 Text { textFormat: Text.PlainText; text: " / " + (appState.settings.name || "Starting…"); color: Theme.muted; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
-                Rectangle { width: 6; height: 6; radius: 3; color: appState.ready ? Theme.accent : Theme.warning }
-                Text { textFormat: Text.PlainText; text: appState.ready ? "Ready" : "Connecting"; color: Theme.muted; font.pixelSize: 11 }
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
         }
@@ -287,7 +285,7 @@ ApplicationWindow {
                     }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Logs rotate automatically. Diagnostic bundles exclude names, filenames, paths, credentials, and detailed error text."; wrapMode:Text.Wrap; color:Theme.muted; font.pixelSize:11 }
                     Rectangle { Layout.fillWidth:true; Layout.leftMargin:18; Layout.rightMargin:18; height:1; color:Theme.line }
-                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.6")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
+                    Text { textFormat: Text.PlainText; Layout.leftMargin:18; text:"handoff "+(appState.version || "1.0.7")+" · Qt 6 / tailcat"; color:Theme.muted; font.pixelSize:11 }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Device identity: "+(appState.deviceId || "Starting…"); color:Theme.muted; font.pixelSize:10; wrapMode:Text.Wrap }
                     Text { textFormat: Text.PlainText; Layout.leftMargin:18; Layout.rightMargin:18; Layout.fillWidth:true; text:"Closing the window keeps transfers running. Use the tray menu to quit.\nIncoming transfers always require your approval."; color:Theme.muted; font.pixelSize:11; lineHeight:1.5 }
                     Item { Layout.preferredHeight:12 }
