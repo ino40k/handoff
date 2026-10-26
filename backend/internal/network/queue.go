@@ -13,7 +13,9 @@ import (
 )
 
 func (s *Service) queueLoop() {
-	go s.controlLoop()
+	s.background(s.controlLoop)
+	failures := map[string]int{}
+	retryAt := map[string]time.Time{}
 	for s.ctx.Err() == nil {
 		st := s.Store.Snapshot()
 		var queue []*core.Transfer
@@ -33,6 +35,9 @@ func (s *Service) queueLoop() {
 		})
 		worked := false
 		for _, t := range queue {
+			if time.Now().Before(retryAt[t.ID]) {
+				continue
+			}
 			p := st.Peers[t.PeerID]
 			if p == nil {
 				continue
@@ -52,15 +57,16 @@ func (s *Service) queueLoop() {
 					}
 					return nil
 				})
-				select {
-				case <-s.ctx.Done():
-					return
-				case <-time.After(3 * time.Second):
-				}
+				failures[t.ID]++
+				delay := 3 * time.Second * time.Duration(1<<min(failures[t.ID]-1, 6))
+				retryAt[t.ID] = time.Now().Add(delay)
+			} else {
+				delete(failures, t.ID)
+				delete(retryAt, t.ID)
 			}
 			break
 		}
-		delay := 100 * time.Millisecond
+		delay := time.Duration(0)
 		if !worked {
 			delay = time.Second
 		}
@@ -148,7 +154,8 @@ func (s *Service) applyStatus(t *core.Transfer, status TransferStatus) error {
 		old := x.Status
 		x.Offered = true
 		x.Approved = status.Approved
-		x.Done = status.Done
+		// The decoder may reuse status.Done for a later response. State must own it.
+		x.Done = append([]int64(nil), status.Done...)
 		if core.Terminal(status.Status) {
 			x.Status = status.Status
 			x.RemoteAck = true
@@ -175,7 +182,7 @@ func (s *Service) applyStatus(t *core.Transfer, status TransferStatus) error {
 	})
 }
 func (s *Service) sendNext(p *core.Peer, t *core.Transfer) error {
-	ctx, cancel := context.WithTimeout(s.ctx, 90*time.Second)
+	ctx, cancel := context.WithTimeout(s.ctx, 10*time.Minute)
 	defer cancel()
 	q, _ := json.Marshal(map[string]string{"id": t.ID, "digest": t.Manifest.Digest})
 	var grant struct {
@@ -273,7 +280,9 @@ func (s *Service) sendNext(p *core.Peer, t *core.Transfer) error {
 		s.rate(t.ID, sum(next.Done))
 		return nil
 	}
-	if err := s.request(ctx, p, "POST", "/finish", q, &status); err != nil {
+	finishCtx, finishCancel := context.WithTimeout(s.ctx, 24*time.Hour)
+	defer finishCancel()
+	if err := s.request(finishCtx, p, "POST", "/finish", q, &status); err != nil {
 		return err
 	}
 	err := s.applyStatus(t, status)

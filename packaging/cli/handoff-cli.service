@@ -1,0 +1,39 @@
+[Unit]
+Description=handoff cli encrypted peer-to-peer transfers
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=@USER@
+Group=handoff-cli
+SupplementaryGroups=@PRIMARY_GROUP@
+ExecStart=!/usr/bin/setpriv --reuid=@USER@ --regid=handoff-cli --init-groups --bounding-set=-all /usr/local/bin/handoff-cli serve --data-dir /var/lib/handoff-cli --socket /run/handoff-cli/control.sock
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=120
+RuntimeDirectory=handoff-cli
+RuntimeDirectoryMode=0750
+StateDirectory=handoff-cli
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+# The short-lived setpriv launcher needs only these capabilities. It drops the
+# entire bounding set and UID/GID before execing the Go binary. The ! prefix
+# avoids older systemd versions retaining CAP_SYS_ADMIN for their seccomp setup
+# while switching users in a restricted container. All syscall filters remain.
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID CAP_SETPCAP
+RestrictSUIDSGID=true
+# No namespaces, TUN device, routing capabilities, or privileged LXC required.
+# Sources/destinations use ordinary DAC permissions of the chosen account.
+ProtectHome=false
+# Tailcat's netmon needs unprivileged NETLINK_ROUTE interface discovery.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=handoff-cli
+
+[Install]
+WantedBy=multi-user.target

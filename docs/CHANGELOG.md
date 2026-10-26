@@ -1,3 +1,17 @@
+# handoff cli 1.0.0
+
+- Add a static Go-only Linux client and non-root systemd service sharing the
+  desktop engine, tailcat identities, pairing, approvals and protocol.
+- Add durable source preparation, queue/history controls, live monitoring,
+  reviewed destination merges, identical-file skips and replacement backups.
+  Add a checksummed progress journal for bulk transfers.
+- Add the checksum-verifying installer, upgrades/rollback, data-preserving
+  uninstaller, CLI release assets and draft-release workflow.
+- Validate desktop/CLI and CLI/CLI transfers, restart/relay recovery, large-file
+  streaming and Ubuntu/Debian systemd container lifecycle.
+- Keep desktop UI, version and packaging unchanged. CLI releases use separate
+  version tags and downloads.
+
 # Changes
 
 ## 1.0.7

@@ -1,0 +1,87 @@
+name: handoff cli
+on:
+  pull_request:
+    paths: ['backend/**', 'scripts/*cli*', 'packaging/cli/**', '.github/workflows/cli.yml']
+  push:
+    tags: ['cli-v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Install shell linter
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+      - name: Validate Go and installer
+        run: |
+          cd backend
+          go vet ./...
+          go test -race ./...
+          cd ..
+          sh -n scripts/install-cli.sh scripts/uninstall-cli.sh
+          shellcheck scripts/install-cli.sh scripts/uninstall-cli.sh
+      - name: Real tailcat interoperability and restart tests
+        env:
+          HANDOFF_NETWORK_TEST: '1'
+        run: cd backend && go test -timeout 15m ./internal/network ./internal/headless
+      - name: Relay fallback interoperability
+        env:
+          HANDOFF_NETWORK_TEST: '1'
+          TS_DEBUG_ALWAYS_USE_DERP: 'true'
+        run: cd backend && go test -timeout 5m -count=1 -run TestDesktopCLIInteroperability ./internal/headless
+      - name: Large streaming file
+        env:
+          HANDOFF_LARGE_TEST: '1'
+        run: cd backend && go test -timeout 5m -count=1 -run TestLargeSparseFileStreaming ./internal/core
+      - name: Package portable static binary
+        run: bash scripts/build-cli.sh
+      - name: Ensure release tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: test -f "dist/handoff-cli-${GITHUB_REF_NAME#cli-v}-linux-amd64.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: handoff-cli-linux-amd64
+          path: |
+            dist/handoff-cli-*-linux-amd64.tar.gz
+            dist/SHA256SUMS-cli.txt
+            dist/install-cli.sh
+  install-test:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: handoff-cli-linux-amd64
+          path: dist
+      - name: Install rootless container tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq podman
+      - name: Real Ubuntu and Debian systemd lifecycle
+        run: python3 scripts/test-cli-install.py
+  release:
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    needs: [build, install-test]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: handoff-cli-linux-amd64
+          path: dist
+      - name: Create draft for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --latest=false --title "handoff cli ${GITHUB_REF_NAME#cli-v}" --generate-notes dist/*
+          # Derive the command from the real uploaded asset, never an invented URL.
+          asset_url=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[] | select(.name == "install-cli.sh") | .url')
+          printf 'After publishing this reviewed draft, install with:\n\n```sh\ncurl --proto "=https" --tlsv1.2 -fsSL "%s" | sudo sh\n```\n' "$asset_url" > /tmp/cli-install-notes.md
+          gh release edit "$GITHUB_REF_NAME" --notes-file /tmp/cli-install-notes.md

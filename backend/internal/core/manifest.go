@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 )
 
 func parentPath(p string) string {
@@ -22,7 +23,7 @@ func parentPath(p string) string {
 	return d
 }
 func ValidatePath(p string) (string, error) {
-	if len(p) == 0 || len(p) > 4096 || strings.HasPrefix(p, "/") || strings.ContainsAny(p, "\\:\x00") || path.Clean(p) != p {
+	if !utf8.ValidString(p) || len(p) == 0 || len(p) > 4096 || strings.HasPrefix(p, "/") || strings.ContainsAny(p, "\\:\x00") || path.Clean(p) != p {
 		return "", errors.New("unsafe relative path")
 	}
 	for _, c := range strings.Split(p, "/") {
@@ -46,6 +47,7 @@ func ValidatePath(p string) (string, error) {
 }
 func BuildManifest(ctx context.Context, paths []string) (Manifest, error) {
 	m := Manifest{ID: RandomID(), Entries: []Entry{}}
+	buffer := make([]byte, ChunkSize)
 	for _, src := range paths {
 		abs, err := filepath.Abs(src)
 		if err != nil {
@@ -60,7 +62,7 @@ func BuildManifest(ctx context.Context, paths []string) (Manifest, error) {
 		if err != nil {
 			return m, err
 		}
-		err = walk(ctx, root, top, top, &m)
+		err = walk(ctx, root, top, top, &m, buffer)
 		root.Close()
 		if err != nil {
 			return m, err
@@ -76,7 +78,7 @@ func BuildManifest(ctx context.Context, paths []string) (Manifest, error) {
 	}
 	return m, nil
 }
-func walk(ctx context.Context, root *os.Root, rel, out string, m *Manifest) error {
+func walk(ctx context.Context, root *os.Root, rel, out string, m *Manifest, buf []byte) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -102,7 +104,7 @@ func walk(ctx context.Context, root *os.Root, rel, out string, m *Manifest) erro
 			return err
 		}
 		for _, e := range entries {
-			if err = walk(ctx, root, path.Join(rel, e.Name()), path.Join(out, e.Name()), m); err != nil {
+			if err = walk(ctx, root, path.Join(rel, e.Name()), path.Join(out, e.Name()), m, buf); err != nil {
 				return err
 			}
 		}
@@ -125,7 +127,6 @@ func walk(ctx context.Context, root *os.Root, rel, out string, m *Manifest) erro
 	}
 	ent := Entry{Path: out, Size: st.Size(), Source: filepath.Join(root.Name(), filepath.FromSlash(rel)), Chunks: []string{}}
 	h := sha256.New()
-	buf := make([]byte, ChunkSize)
 	var read int64
 	for {
 		if err := ctx.Err(); err != nil {

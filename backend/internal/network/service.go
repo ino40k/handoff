@@ -3,6 +3,8 @@ package network
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,6 +44,10 @@ type connection struct {
 }
 type Service struct {
 	closeOnce   sync.Once
+	workers     sync.WaitGroup
+	handlers    sync.WaitGroup
+	handlerMu   sync.Mutex
+	stopping    bool
 	Store       *core.Store
 	Receiver    *core.Receiver
 	Log         *core.Logger
@@ -83,7 +89,28 @@ func ValidateAddress(a tailcat.Addr) (tailcat.ConnInfo, error) {
 	}
 	return ci, nil
 }
+
+// background admits workers under the same mutex used when stopping. Close
+// waits for every admitted worker before another host may reopen the profile.
+func (s *Service) background(fn func()) {
+	s.mu.Lock()
+	if s.ctx.Err() != nil {
+		s.mu.Unlock()
+		return
+	}
+	s.workers.Add(1)
+	s.mu.Unlock()
+	go func() { defer s.workers.Done(); fn() }()
+}
 func (s *Service) Run() {
+	s.mu.Lock()
+	if s.ctx.Err() != nil {
+		s.mu.Unlock()
+		return
+	}
+	s.workers.Add(1)
+	s.mu.Unlock()
+	defer s.workers.Done()
 	s.Log.Event("startup", "engine_start", "", nil)
 	if err := s.Receiver.Recover(); err != nil {
 		s.Log.Event("recovery", "storage_recovery_failed", "", err)
@@ -114,16 +141,25 @@ func (s *Service) Run() {
 			}
 		}
 		s.mu.Lock()
+		if s.ctx.Err() != nil {
+			s.mu.Unlock()
+			return
+		}
 		s.ready = true
 		s.startError = ""
 		s.mu.Unlock()
 		s.Log.Event("connectivity", "listener_ready", "", nil)
-		go s.presenceLoop()
-		go s.queueLoop()
+		s.background(s.presenceLoop)
+		s.background(s.queueLoop)
 		return
 	}
 }
 func (s *Service) start() error {
+	// netmon.NewStatic in the pinned upstream assumes interface enumeration works.
+	// Check first so sandbox/container policy failures become retryable diagnostics.
+	if _, err := net.Interfaces(); err != nil {
+		return fmt.Errorf("cannot enumerate network interfaces (check container/socket restrictions): %w", err)
+	}
 	st := s.Store.Snapshot()
 	ctx, cancel := context.WithTimeout(s.ctx, 15*time.Second)
 	defer cancel()
@@ -162,7 +198,7 @@ func (s *Service) start() error {
 		server.Close()
 		return s.ctx.Err()
 	}
-	h := &http.Server{Handler: http.HandlerFunc(s.handle), ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 10 * time.Minute, WriteTimeout: 10 * time.Minute, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192, ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+	h := &http.Server{Handler: http.HandlerFunc(s.handle), ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 10 * time.Minute, WriteTimeout: 24 * time.Hour, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192, ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 		k, ok := server.PeerKey(c.RemoteAddr())
 		if !ok {
 			return ctx
@@ -170,14 +206,20 @@ func (s *Service) start() error {
 		return context.WithValue(ctx, peerContext{}, k)
 	}}
 	s.mu.Lock()
+	if s.ctx.Err() != nil {
+		s.mu.Unlock()
+		ln.Close()
+		server.Close()
+		return s.ctx.Err()
+	}
 	s.server = server
 	s.http = h
 	s.mu.Unlock()
-	go func() {
+	s.background(func() {
 		if err := h.Serve(ln); err != nil && err != http.ErrServerClosed {
 			s.Log.Event("connectivity", "listener_failed", "", err)
 		}
-	}()
+	})
 	return nil
 }
 func (s *Service) Ready() (bool, string) {
@@ -214,7 +256,15 @@ func (s *Service) rate(id string, bytes int64) {
 	if !r.At.IsZero() {
 		elapsed := now.Sub(r.At).Seconds()
 		if elapsed > 0 {
-			r.Speed = float64(bytes-r.Bytes) / elapsed
+			sample := float64(bytes-r.Bytes) / elapsed
+			if sample < 0 {
+				sample = 0
+			}
+			if r.Speed > 0 {
+				r.Speed = .75*r.Speed + .25*sample
+			} else {
+				r.Speed = sample
+			}
 		}
 	}
 	r.Bytes = bytes
@@ -224,14 +274,14 @@ func (s *Service) rate(id string, bytes int64) {
 func (s *Service) client(p *core.Peer) *connection {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.ctx.Err() != nil || s.Store.Snapshot().Peers[p.ID] == nil {
+	if s.ctx.Err() != nil || !s.Store.KnownPeer(p.ID) {
 		return nil
 	}
 	if c := s.clients[p.ID]; c != nil {
 		return c
 	}
 	tc := &tailcat.Client{Server: p.Address, Key: p.LocalKey, Logf: s.Log.Tailcat, DERPMapCache: s.cache}
-	tr := &http.Transport{Proxy: nil, DialContext: func(ctx context.Context, network, address string) (net.Conn, error) { return tc.DialTCPPort(ctx, Port) }, MaxIdleConnsPerHost: 1, ResponseHeaderTimeout: 10 * time.Minute, IdleConnTimeout: 30 * time.Second}
+	tr := &http.Transport{Proxy: nil, DialContext: func(ctx context.Context, network, address string) (net.Conn, error) { return tc.DialTCPPort(ctx, Port) }, MaxIdleConnsPerHost: 1, ResponseHeaderTimeout: 24 * time.Hour, IdleConnTimeout: 30 * time.Second}
 	clientCtx, clientCancel := context.WithCancel(s.ctx)
 	c := &connection{ctx: clientCtx, cancel: clientCancel, tc: tc, transport: tr, http: &http.Client{Transport: tr, Timeout: 10 * time.Minute, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 	s.clients[p.ID] = c
@@ -257,7 +307,13 @@ func (s *Service) request(ctx context.Context, p *core.Peer, method, route strin
 	stop := context.AfterFunc(client.ctx, requestCancel)
 	defer stop()
 	req = req.WithContext(requestCtx)
-	res, err := client.http.Do(req)
+	hc := client.http
+	if route == "/finish" {
+		copy := *hc
+		copy.Timeout = 24 * time.Hour
+		hc = &copy
+	}
+	res, err := hc.Do(req)
 	if err != nil {
 		return err
 	}
@@ -276,7 +332,7 @@ func (s *Service) authenticated(r *http.Request) string {
 	if !ok {
 		return ""
 	}
-	for id, p := range s.Store.Snapshot().Peers {
+	for id, p := range s.Store.Peers() {
 		if p.RemoteKey == k {
 			return id
 		}
@@ -291,6 +347,15 @@ func decode(w http.ResponseWriter, r *http.Request, v any, n int64) error {
 	return json.NewDecoder(http.MaxBytesReader(w, r.Body, n)).Decode(v)
 }
 func (s *Service) handle(w http.ResponseWriter, r *http.Request) {
+	s.handlerMu.Lock()
+	if s.stopping {
+		s.handlerMu.Unlock()
+		http.Error(w, "stopping", 503)
+		return
+	}
+	s.handlers.Add(1)
+	s.handlerMu.Unlock()
+	defer s.handlers.Done()
 	peer := s.authenticated(r)
 	if peer == "" {
 		s.Log.Event("authentication", "request_rejected", "", nil)
@@ -311,7 +376,7 @@ func (s *Service) handle(w http.ResponseWriter, r *http.Request) {
 			err = errors.New("unsupported protocol")
 		}
 		if err == nil {
-			jsonReply(w, map[string]any{"version": Protocol, "name": s.Store.Snapshot().Settings.Name})
+			jsonReply(w, map[string]any{"version": Protocol, "name": s.Store.Preferences().Name})
 			return
 		}
 	case "/offer":
@@ -468,7 +533,7 @@ func sum(v []int64) int64 {
 }
 func (s *Service) presenceLoop() {
 	for s.ctx.Err() == nil {
-		peers := s.Store.Snapshot().Peers
+		peers := s.Store.Peers()
 		var wg sync.WaitGroup
 		for id, p := range peers {
 			wg.Add(1)
@@ -565,6 +630,9 @@ func (s *Service) RemovePeer(id string) error {
 func (s *Service) Close() {
 	s.closeOnce.Do(func() {
 		s.cancel()
+		s.handlerMu.Lock()
+		s.stopping = true
+		s.handlerMu.Unlock()
 		s.mu.Lock()
 		h := s.http
 		tc := s.server
@@ -597,6 +665,8 @@ func (s *Service) Close() {
 		if tc != nil {
 			tc.Close()
 		}
+		s.handlers.Wait()
+		s.workers.Wait()
 		s.Log.Event("shutdown", "engine_stop", "", nil)
 	})
 }
@@ -615,6 +685,23 @@ func (s *Service) LocalAction(id, action, dest string) error {
 	return err
 }
 func (s *Service) Send(ctx context.Context, paths, peers []string) error {
+	return s.SendWithID(ctx, paths, peers, "")
+}
+
+// SendWithID allows a durable preparation job to retry without duplicate requests.
+func (s *Service) SendWithID(ctx context.Context, paths, peers []string, job string) error {
+	if job != "" {
+		st := s.Store.Snapshot()
+		all := true
+		for _, peer := range peers {
+			if st.Transfers[JobTransferID(job, peer)] == nil {
+				all = false
+			}
+		}
+		if all && len(peers) > 0 {
+			return nil
+		}
+	}
 	if len(peers) == 0 || len(paths) == 0 {
 		return errors.New("select files and at least one peer")
 	}
@@ -625,6 +712,9 @@ func (s *Service) Send(ctx context.Context, paths, peers []string) error {
 		return err
 	}
 	return s.Store.Update(func(st *core.State) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		now := time.Now().UTC()
 		for i, id := range peers {
 			if st.Peers[id] == nil {
@@ -632,6 +722,9 @@ func (s *Service) Send(ctx context.Context, paths, peers []string) error {
 			}
 			copy := m
 			copy.ID = core.RandomID()
+			if job != "" {
+				copy.ID = JobTransferID(job, id)
+			}
 			copy.Digest = copy.CalculateDigest()
 			st.Transfers[copy.ID] = &core.Transfer{ID: copy.ID, PeerID: id, Direction: "outgoing", Manifest: copy, Status: "pending", Done: make([]int64, len(copy.Entries)), Created: now, Updated: now, Order: now.UnixNano() + int64(i)}
 			s.Log.Event("request", "outgoing_created", copy.ID, nil)
@@ -717,4 +810,9 @@ func (s *Service) receiveFailure(peer, id string, err error) {
 		}
 		return nil
 	})
+}
+
+func JobTransferID(job, peer string) string {
+	h := sha256.Sum256([]byte(job + ":" + peer))
+	return hex.EncodeToString(h[:16])
 }

@@ -1,6 +1,6 @@
 # handoff
 
-A Qt 6 Quick / PySide6 desktop file-transfer utility with a Go engine that uses
+A desktop file-transfer utility and a headless Linux CLI, sharing a Go engine that uses
 tailcat directly. No Tailscale installation, account, shared tailnet, port
 forwarding, or handoff coordination server is used. Both devices need outbound
 internet connectivity to the public tailcat DERP service for discovery; file
@@ -38,6 +38,42 @@ its next file. Sending and receiving are independently sequential.
 Closing the window hides it. Transfers continue in the tray; use its **Quit
 handoff** action to stop. Launching again activates the existing instance.
 
+## Headless Linux CLI
+
+**handoff cli** runs as a non-root systemd boot service and works entirely over
+SSH on Ubuntu/Debian x86-64. It shares desktop pairing, authenticated tailcat
+connections, explicit whole-transfer approvals, integrity checks and verified
+resume. No Qt, Python, graphical session or Tailscale installation is needed.
+
+Install on a Linux x86-64 server with systemd:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/ino40k/handoff/releases/download/cli-v1.0.0/install-cli.sh | sudo sh
+```
+
+The installer asks for a service account, device name and receiving directory.
+See [the CLI guide](docs/CLI.md) for account permissions, upgrades and
+uninstallation, or [the CLI release](https://github.com/ino40k/handoff/releases/tag/cli-v1.0.0)
+for downloads and checksums.
+
+```sh
+sudo handoff-cli invite                     # share invitation privately
+sudo handoff-cli join                       # other machine: paste at hidden prompt
+sudo handoff-cli pairings                   # invitation owner: review request
+sudo handoff-cli approve PAIRING_ID
+sudo handoff-cli send 'Storage server' '/srv/files/Example collection'
+# Receiver:
+sudo handoff-cli pending
+sudo handoff-cli inspect TRANSFER_ID --conflicts
+sudo handoff-cli accept TRANSFER_ID
+sudo handoff-cli status --watch
+```
+
+Existing different files require an explicit reviewed overwrite decision.
+Identical files are verified and skipped; replacement backups are retained.
+Queues and approvals survive SSH disconnects and service restarts. Use
+`handoff-cli --help` for queue, history, settings and diagnostic commands.
+
 ## Screenshots
 
 Captured from the current interface on Fedora using example devices and files.
@@ -58,7 +94,7 @@ awaiting approval, a queued file, and completed history.
 ## Source and builds
 
 `backend/` contains the durable state, transfer protocol, tailcat integration,
-and Windows launcher. `frontend/` contains the PySide6 host and QML interface.
+the shared desktop controller, headless service/client, and Windows launcher. `frontend/` contains the PySide6 host and QML interface.
 `assets/` contains original SVG, PNG and ICO artwork. `packaging/` and `scripts/`
 contain the self-contained RPM and Windows build procedures. Regenerate the
 example screenshots with `.venv/bin/python scripts/render-readme-screenshots.py`.

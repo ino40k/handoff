@@ -88,3 +88,64 @@ Use Settings → Collect sanitized diagnostics on both devices. Compare shared
 transfer IDs, `peer_direct` / `peer_relayed`, reconnect and resume events.
 Transport scope distinguishes an encrypted direct local endpoint from a public
 internet endpoint or a DERP relay. Public relay performance is not a speed guarantee.
+
+## Headless CLI validation (2026-10-26)
+
+Source tests are under `backend/`; the root `tests/` exclusion is unchanged.
+Headless lifecycle tests require Unix sockets. Live tests require outbound
+public DERP access and UDP. All profiles and media are synthetic/temporary.
+
+```sh
+(cd backend && go vet ./... && HANDOFF_NETWORK_TEST=1 go test -race -count=1 -timeout 15m ./...)
+(cd backend && HANDOFF_NETWORK_TEST=1 TS_DEBUG_ALWAYS_USE_DERP=true go test -count=1 -timeout 5m -run TestDesktopCLIInteroperability -v ./internal/headless)
+(cd backend && HANDOFF_LARGE_TEST=1 go test -count=1 -run TestLargeSparseFileStreaming -v ./internal/core)
+bash scripts/build-cli.sh
+python3 scripts/test-cli-install.py
+```
+
+Validated locally:
+
+* Actual terminal client/socket service and desktop stdio engine exchanged
+  recursive trees in both directions over tailcat, including forced public-DERP
+  fallback. No bytes arrived before approval; hashes, Unicode and empty dirs survived.
+  The same interoperability test also passed against the existing packaged
+  desktop 1.0.7 engine. Set `HANDOFF_DESKTOP_ENGINE` to its absolute executable
+  path to exercise a released engine instead of compiling the current host.
+* Two CLI peers preserved pending approval through restart and automatically
+  resumed an accepted transfer after a verified 4 MiB checkpoint and another
+  restart. History removal retained replay receipts.
+* Pairing/expiry, authentication/revocation, source-change/integrity rejection,
+  sequential ordering, pauses, cancellation and history tests.
+* Identical-file skipping, reviewed batch overwrite, stale tokens, concurrent
+  edits, retained backups, directory merging, symlink rejection, and recovery
+  before/after finalization moves. Insufficient-space injection denied approval
+  and writes without acknowledging progress.
+* A 24 GiB sparse file was fully hashed using less than 128 MiB total Go
+  allocations, then a chunk at its large final offset was verified.
+* Journal checksum/revision recovery, torn tails, corrupt frames, compaction,
+  immutable snapshots, decoder-buffer ownership and missing-snapshot refusal. Canceling a preparation job
+  stopped a real sparse-file scan and reconciled a late manifest publication.
+* Clean installs under actual systemd in **rootless Podman** Ubuntu 24.04 and
+  Debian 13 containers. The Go service used a non-root UID, zero effective and
+  bounding capabilities, and NoNewPrivileges. Untrusted accounts could not control
+  it. No privileged container flag was used.
+* Real pairing and directory transfer between installed Ubuntu/Debian services;
+  upgrades preserved pending/accepted/paused requests, identity, peers and settings.
+  Container restart verified boot without login. A checksum-valid broken executable
+  triggered rollback; tampering failed checksum verification. Uninstall/reinstall
+  preserved state/history and received data.
+* Static ELF/package path and metadata checks, with no embedded local profile
+  paths or credential patterns. Desktop smoke loaded all tabs and both themes;
+  Windows backend cross-compilation passed, with no Windows runtime claim.
+
+The installer harness uses a small isolated build context, creates disposable
+profiles, and removes its containers afterward. It needs Podman/cgroup delegation
+and systemd-capable container support. `--existing` is only for dedicated test
+containers: it runs upgrades, reboot and uninstallation inside them.
+
+Remaining deployment checks: install on the actual Ubuntu VM and Debian LXC,
+grant filesystem access explicitly, pair across their separate internet networks,
+transfer synthetic large files, interrupt/reboot both machines and compare hashes.
+Check `peers` for direct/relay routes and confirm host firewalls permit DERP/UDP.
+Local tests cannot certify those NAT/firewall/storage/mount configurations.
+Hosted Actions and the online installer require approved publication first.

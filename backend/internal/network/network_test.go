@@ -337,3 +337,27 @@ func TestClearedHistoryRetainsAuthenticatedReceipt(t *testing.T) {
 		t.Fatal("replay reopened a request")
 	}
 }
+func TestRemoteProgressDoesNotAliasDecoderBuffer(t *testing.T) {
+	s := testService(t)
+	peer := testPeer(t, s)
+	source := filepath.Join(t.TempDir(), "data.bin")
+	if e := os.WriteFile(source, []byte("data"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	if e := s.Send(context.Background(), []string{source}, []string{peer.ID}); e != nil {
+		t.Fatal(e)
+	}
+	var tr *core.Transfer
+	for _, v := range s.Store.Snapshot().Transfers {
+		tr = v
+	}
+	status := TransferStatus{Status: "pending", Done: []int64{0}}
+	if e := s.applyStatus(tr, status); e != nil {
+		t.Fatal(e)
+	}
+	// encoding/json reuses slice backing arrays when decoding the next response.
+	status.Done[0] = 4
+	if s.Store.Snapshot().Transfers[tr.ID].Done[0] != 0 {
+		t.Fatal("decoder buffer mutated durable state outside the transaction")
+	}
+}

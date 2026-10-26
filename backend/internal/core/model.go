@@ -52,23 +52,32 @@ type Manifest struct {
 	Entries []Entry `json:"entries"`
 	Total   int64   `json:"total"`
 }
+
+// TargetDecision binds replacement permission to the bytes reviewed locally.
+type TargetDecision struct {
+	Hash      string `json:"hash,omitempty"`
+	Size      int64  `json:"size,omitempty"`
+	Identical bool   `json:"identical,omitempty"`
+}
 type Transfer struct {
-	ID          string            `json:"id"`
-	PeerID      string            `json:"peerId"`
-	Direction   string            `json:"direction"`
-	Manifest    Manifest          `json:"manifest"`
-	Status      string            `json:"status"`
-	Approved    bool              `json:"approved"`
-	Offered     bool              `json:"offered"`
-	RemoteAck   bool              `json:"remoteAck"`
-	Paused      bool              `json:"paused"`
-	Destination string            `json:"destination,omitempty"`
-	Done        []int64           `json:"done"`
-	Final       map[string]string `json:"final,omitempty"`
-	Error       string            `json:"error,omitempty"`
-	Created     time.Time         `json:"created"`
-	Updated     time.Time         `json:"updated"`
-	Order       int64             `json:"order"`
+	Reviewed    bool                      `json:"reviewed,omitempty"`
+	Targets     map[string]TargetDecision `json:"targets,omitempty"`
+	ID          string                    `json:"id"`
+	PeerID      string                    `json:"peerId"`
+	Direction   string                    `json:"direction"`
+	Manifest    Manifest                  `json:"manifest"`
+	Status      string                    `json:"status"`
+	Approved    bool                      `json:"approved"`
+	Offered     bool                      `json:"offered"`
+	RemoteAck   bool                      `json:"remoteAck"`
+	Paused      bool                      `json:"paused"`
+	Destination string                    `json:"destination,omitempty"`
+	Done        []int64                   `json:"done"`
+	Final       map[string]string         `json:"final,omitempty"`
+	Error       string                    `json:"error,omitempty"`
+	Created     time.Time                 `json:"created"`
+	Updated     time.Time                 `json:"updated"`
+	Order       int64                     `json:"order"`
 }
 type Receipt struct {
 	PeerID   string `json:"peerId"`
@@ -77,6 +86,7 @@ type Receipt struct {
 	Approved bool   `json:"approved"`
 }
 type State struct {
+	Revision  uint64               `json:"revision,omitempty"`
 	Receipts  map[string]Receipt   `json:"receipts,omitempty"`
 	Schema    int                  `json:"schema"`
 	Identity  Identity             `json:"identity"`

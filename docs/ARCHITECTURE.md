@@ -99,3 +99,47 @@ same-user processes. It serves no shell, proxy, exit node or generic file share.
 Upstream's wrapper is experimental and its public relays are rate-limited:
 https://github.com/tailscale/tailcat/blob/52fbad323e9d352f1febb623e0975368e9a8cbdd/SECURITY.md
 https://github.com/tailscale/tailcat/tree/52fbad323e9d352f1febb623e0975368e9a8cbdd#key-management
+
+
+## Headless Linux host
+
+`internal/control` shares the original desktop command/snapshot/diagnostic
+implementation. The desktop keeps its inherited stdio transport. The Linux
+`handoff-cli` binary adds a Unix-socket service host with exclusive state lock,
+protected socket directory, group-restricted control and no TCP control port.
+Its separate profile keeps desktop identity/state untouched. All control users
+are trusted administrators of the non-root service account. Secret invitations
+are read privately; logs record command categories/IDs, not parameters.
+
+Durable source-preparation jobs are committed before acknowledging `send`.
+Replayed preparation binds stable transfer IDs to job/peer IDs, preventing
+requests from duplicating after a crash at the job/transfer transaction boundary.
+Workers use daemon context rather than connection lifetime, so SSH disconnects
+cannot cancel transfers. Incoming offers and the wire protocol are unchanged.
+
+Linux CLI receiving adds a local reviewed merge policy. It hashes existing
+regular files, binds overwrite approval to a token over the immutable manifest,
+absolute destination and current hashes, and records that decision durably.
+Identical files consume no network/staging space and are reverified at recovery
+and finish. Incoming bytes still use the original chunk validator/checkpoints.
+Finalization opens anchored parent directories, rejects symlinks, moves approved
+originals exclusively into persistent backups, verifies them again, and installs
+verified staged files with RENAME_NOREPLACE. Crashes before/after either move
+are recoverable from the durable target hashes, staged files and backups.
+Concurrent edits stop finalization rather than silently overwriting new data.
+Backups remain for administrator review. Desktop receiving keeps its existing
+conflict-free top-level rename policy; local merge decisions never enter the
+network manifest or alter desktop approval behavior.
+
+
+Headless state additionally uses a checksummed write-ahead progress journal.
+Every frame is fsynced before publishing state/acknowledging bytes, carries a
+strict revision and sparse changed offsets, and omits immutable manifests.
+Recovery rejects corrupt complete frames or revision gaps; an unacknowledged
+torn final frame is truncated only by the exclusively locked writer. An atomic
+full snapshot records its revision before truncating the older WAL, making a
+crash during compaction safe. Manifest, trust, approval-policy and identity changes
+force a full checkpoint. Desktop keeps its full-state writing policy, and both
+new hosts can read journals. Partial-file hash verification remains authoritative
+after journal replay. Snapshots deep-copy mutable slices/maps directly, avoiding
+JSON roundtrips, and authentication reads only the trust map.

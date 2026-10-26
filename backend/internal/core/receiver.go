@@ -17,6 +17,7 @@ import (
 
 type Receiver struct {
 	Store *Store
+	space func(string) (uint64, error)
 	mu    sync.Mutex
 }
 
@@ -119,7 +120,7 @@ func (r *Receiver) Accept(id, dest string) error {
 		return e
 	}
 	root.Close()
-	free, e := available(dest)
+	free, e := r.freeSpace(dest)
 	if e != nil {
 		return e
 	}
@@ -174,6 +175,9 @@ func (r *Receiver) Accept(id, dest string) error {
 	})
 }
 func (r *Receiver) Put(peer, id, digest string, index int, offset int64, data []byte) error {
+	if err := r.Store.Health(); err != nil {
+		return fmt.Errorf("state storage failed; free space/fix permissions and restart service: %w", err)
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	s := r.Store.Snapshot()
@@ -211,7 +215,7 @@ func (r *Receiver) Put(peer, id, digest string, index int, offset int64, data []
 	if offset != t.Done[index] {
 		return errors.New("nonsequential chunk")
 	}
-	free, err := available(t.Destination)
+	free, err := r.freeSpace(t.Destination)
 	if err != nil {
 		return err
 	}
@@ -324,6 +328,9 @@ func (r *Receiver) Finish(peer, id, digest string) error {
 	}
 	if Terminal(t.Status) {
 		return errors.New("transfer ended")
+	}
+	if t.Reviewed {
+		return r.finishReviewed(t)
 	}
 	root, err := openDestination(t.Destination)
 	if err != nil {
@@ -470,6 +477,9 @@ func (r *Receiver) Recover() error {
 	return result
 }
 func (r *Receiver) recoverOne(t *Transfer) error {
+	if t.Reviewed {
+		return r.recoverReviewed(t)
+	}
 	id := t.ID
 	stage, err := openStage(t)
 	if err != nil {
@@ -667,4 +677,11 @@ func (r *Receiver) Grant(peer, id, digest string) (bool, error) {
 		return nil
 	})
 	return err == nil, err
+}
+
+func (r *Receiver) freeSpace(path string) (uint64, error) {
+	if r.space != nil {
+		return r.space(path)
+	}
+	return available(path)
 }

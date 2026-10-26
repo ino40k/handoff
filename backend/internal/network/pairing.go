@@ -274,7 +274,7 @@ func (s *Service) JoinInvitation(code string) error {
 	s.mu.Lock()
 	s.joins[id] = j
 	s.mu.Unlock()
-	go func() {
+	s.background(func() {
 		defer cancel()
 		defer client.Close()
 		tr := &http.Transport{Proxy: nil, DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -343,7 +343,7 @@ func (s *Service) JoinInvitation(code string) error {
 		}
 		setStatus("expired")
 		s.Log.Event("pairing", "pairing_expired", id, nil)
-	}()
+	})
 	s.Log.Event("pairing", "invitation_join_started", id, nil)
 	return nil
 }

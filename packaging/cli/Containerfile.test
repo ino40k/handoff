@@ -1,0 +1,4 @@
+ARG BASE=debian:13
+FROM ${BASE}
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends systemd systemd-sysv curl ca-certificates util-linux passwd shellcheck && rm -rf /var/lib/apt/lists/*
+CMD ["/sbin/init"]
