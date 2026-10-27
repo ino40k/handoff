@@ -148,4 +148,10 @@ grant filesystem access explicitly, pair across their separate internet networks
 transfer synthetic large files, interrupt/reboot both machines and compare hashes.
 Check `peers` for direct/relay routes and confirm host firewalls permit DERP/UDP.
 Local tests cannot certify those NAT/firewall/storage/mount configurations.
-Hosted Actions and the online installer require approved publication first.
+The [GitHub Actions release validation](https://github.com/ino40k/handoff/actions/runs/40422838565)
+passed Go/race/lint checks, real tailcat direct/relay and restart tests, large-file
+streaming, packaging, and the complete Ubuntu/Debian systemd installer lifecycle.
+After publishing `cli-v1.0.0`, the anonymous public `curl | sh` installer was also
+verified in fresh rootless Ubuntu and Debian containers: terminal prompts,
+checksum verification, non-root execution, zero capabilities and active boot
+startup all passed. No installation was made on the development host.
