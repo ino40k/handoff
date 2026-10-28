@@ -143,3 +143,25 @@ force a full checkpoint. Desktop keeps its full-state writing policy, and both
 new hosts can read journals. Partial-file hash verification remains authoritative
 after journal replay. Snapshots deep-copy mutable slices/maps directly, avoiding
 JSON roundtrips, and authentication reads only the trust map.
+
+
+## Incoming resource limits (desktop 1.0.8 / CLI 1.0.1)
+
+New incoming requests account for retained manifests in every state and compact
+replay receipts. Conservative metadata budgets are 64 MiB per peer and 128 MiB
+per profile; request/receipt counts are limited to 65,536 per peer and 262,144 per
+profile. Clearing finished history frees full-manifest storage while retaining
+replay receipts and their accounting. At the replay-record limit, new requests
+are refused; existing requests, approvals, retries and authenticated replays
+continue. Upgrades preserve existing state even if it exceeds the new limits.
+
+Peer JSON responses, including chunk acknowledgements, are limited to 4 MiB
+before decoding; this accommodates the maximum 100,000-entry progress vector.
+Oversized, concatenated or otherwise malformed replies are rejected.
+
+Linux finalization uses separate opened staging and destination directory
+handles with single-component names. Renaming or replacing a staging ancestor
+does not redirect the source move. Linux staging parents and transfer roots
+must be private and owned by the receiving account. Receiving directories can
+remain shared; the reserved staging directories must be private. Windows retains
+its documented trusted-account pathname-stability assumption.

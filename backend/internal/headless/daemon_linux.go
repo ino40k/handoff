@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-const Version = "1.0.0"
+const Version = "1.0.1"
 const DefaultSocket = "/run/handoff-cli/control.sock"
 const DefaultData = "/var/lib/handoff-cli"
 

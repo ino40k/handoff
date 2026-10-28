@@ -1,3 +1,13 @@
+# Security updates: desktop 1.0.8 / CLI 1.0.1
+
+- Bound retained incoming request metadata globally and per peer, including
+  canceled history and replay receipts. Existing requests, approvals and resume
+  checkpoints remain usable at quota; new requests receive a clear error.
+- Bound every transfer response before JSON parsing, including chunk replies.
+- Finalize Linux desktop receives from the verified staging directory handle,
+  and reject non-private or foreign-owned Linux staging directories.
+- Preserve the wire protocol, pairing state, receive approvals and file formats.
+
 # handoff cli 1.0.0
 
 - Add a static Go-only Linux client and non-root systemd service sharing the

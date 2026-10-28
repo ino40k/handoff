@@ -16,7 +16,7 @@ import (
 const ChunkSize = 4 << 20
 const MaxEntries = 100000
 const MaxManifest = 32 << 20
-const Version = "1.0.7"
+const Version = "1.0.8"
 
 type Settings struct {
 	Name       string `json:"name"`

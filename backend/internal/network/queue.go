@@ -271,7 +271,7 @@ func (s *Service) sendNext(p *core.Peer, t *core.Transfer) error {
 			return fmt.Errorf("receiver temporarily unavailable (%d)", res.StatusCode)
 		}
 		var next TransferStatus
-		if err = json.NewDecoder(res.Body).Decode(&next); err != nil {
+		if err = decodeResponse(res.Body, &next); err != nil {
 			return err
 		}
 		if err = s.applyStatus(t, next); err != nil {

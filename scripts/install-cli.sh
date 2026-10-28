@@ -3,7 +3,7 @@
 set -eu
 umask 077
 repo=https://github.com/ino40k/handoff
-version=cli-v1.0.0
+version=cli-v1.0.1
 archive=
 checksums=
 while [ "$#" -gt 0 ]; do

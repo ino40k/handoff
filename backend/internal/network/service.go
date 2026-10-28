@@ -323,7 +323,26 @@ func (s *Service) request(ctx context.Context, p *core.Peer, method, route strin
 		return fmt.Errorf("peer response %d: %s", res.StatusCode, core.Redact(string(b)))
 	}
 	if out != nil {
-		return json.NewDecoder(io.LimitReader(res.Body, core.MaxManifest)).Decode(out)
+		return decodeResponse(res.Body, out)
+	}
+	return nil
+}
+
+// A maximum-size progress vector fits comfortably within 4 MiB. Bound all
+// remote JSON before decoding, including unknown fields and trailing input.
+const maxPeerResponse = 4 << 20
+
+func decodeResponse(body io.ReadCloser, out any) error {
+	d := json.NewDecoder(http.MaxBytesReader(nil, body, maxPeerResponse))
+	if err := d.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := d.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return errors.New("unexpected extra peer response")
+		}
+		return err
 	}
 	return nil
 }

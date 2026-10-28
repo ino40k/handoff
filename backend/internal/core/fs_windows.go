@@ -8,6 +8,10 @@ import (
 	"os"
 )
 
+// Windows uses the receiving account's inherited ACLs and the documented trusted
+// same-user filesystem model; Unix ownership/mode checks do not apply.
+func validateStageDirectory(root *os.Root) error { return nil }
+
 func secureDir(p string) error {
 	u, e := windows.GetCurrentProcessToken().GetTokenUser()
 	if e != nil {
@@ -44,14 +48,15 @@ func available(p string) (uint64, error) {
 	e = windows.GetDiskFreeSpaceEx(ptr, &free, &total, &all)
 	return free, e
 }
-func renameExclusive(root *os.File, from, to string) error {
-	// Windows MoveFile does not replace an existing destination. Both paths were
-	// created through os.Root; top-level destination names cannot contain slashes.
-	a, e := windows.UTF16PtrFromString(root.Name() + string(os.PathSeparator) + from)
+func renameExclusive(source *os.File, from string, destination *os.File, to string) error {
+	// Windows MoveFile does not replace an existing destination. Both directory
+	// handles were opened through os.Root; source and destination names are single
+	// components. Root pathname stability uses the trusted same-user model.
+	a, e := windows.UTF16PtrFromString(source.Name() + string(os.PathSeparator) + from)
 	if e != nil {
 		return e
 	}
-	b, e := windows.UTF16PtrFromString(root.Name() + string(os.PathSeparator) + to)
+	b, e := windows.UTF16PtrFromString(destination.Name() + string(os.PathSeparator) + to)
 	if e != nil {
 		return e
 	}

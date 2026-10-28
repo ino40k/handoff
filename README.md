@@ -10,15 +10,15 @@ traffic upgrades to encrypted direct UDP when possible.
 
 Download installers and portable builds from [GitHub Releases](https://github.com/ino40k/handoff/releases/latest). Local builds write their artifacts to `dist/`:
 
-* **Fedora:** `handoff-1.0.7-1.fc44.x86_64.rpm` — install with
-  `sudo dnf install ./dist/handoff-1.0.7-1.fc44.x86_64.rpm`, then open **handoff**
+* **Fedora:** `handoff-1.0.8-1.fc44.x86_64.rpm` — install with
+  `sudo dnf install ./dist/handoff-1.0.8-1.fc44.x86_64.rpm`, then open **handoff**
   from the application launcher.
-* **Windows 11:** `handoff-1.0.7-windows-x64-setup.exe` — per-user installer,
+* **Windows 11:** `handoff-1.0.8-windows-x64-setup.exe` — per-user installer,
   Start menu integration, notification shortcut, protocol handler, and uninstaller.
-* **Windows portable:** `handoff-1.0.7-windows-x64-portable.zip` — extract the
+* **Windows portable:** `handoff-1.0.8-windows-x64-portable.zip` — extract the
   **entire folder**, then run `handoff.exe`. Keep the runtime and frontend folders
   alongside it. Python, Go, Qt, and Tailscale are not installation prerequisites.
-* **Linux portable:** `handoff-1.0.7-linux-x86_64.tar.gz` — extract and run
+* **Linux portable:** `handoff-1.0.8-linux-x86_64.tar.gz` — extract and run
   `handoff/handoff` on Fedora with the normal desktop system libraries installed.
 
 Choose a device name and receiving folder in the first-launch wizard. Add a
@@ -48,12 +48,12 @@ resume. No Qt, Python, graphical session or Tailscale installation is needed.
 Install on a Linux x86-64 server with systemd:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://github.com/ino40k/handoff/releases/download/cli-v1.0.0/install-cli.sh | sudo sh
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/ino40k/handoff/releases/download/cli-v1.0.1/install-cli.sh | sudo sh
 ```
 
 The installer asks for a service account, device name and receiving directory.
 See [the CLI guide](docs/CLI.md) for account permissions, upgrades and
-uninstallation, or [the CLI release](https://github.com/ino40k/handoff/releases/tag/cli-v1.0.0)
+uninstallation, or [the CLI release](https://github.com/ino40k/handoff/releases/tag/cli-v1.0.1)
 for downloads and checksums.
 
 ```sh

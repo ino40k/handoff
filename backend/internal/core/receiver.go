@@ -50,6 +50,9 @@ func (r *Receiver) Offer(peer string, m Manifest) error {
 		if count >= 256 {
 			return errors.New("too many outstanding requests")
 		}
+		if err := checkOfferBudget(s, peer, m); err != nil {
+			return err
+		}
 		now := time.Now().UTC()
 		s.Transfers[m.ID] = &Transfer{ID: m.ID, PeerID: peer, Direction: "incoming", Manifest: m, Status: "pending", Done: make([]int64, len(m.Entries)), Created: now, Updated: now, Order: now.UnixNano()}
 		return nil
@@ -94,10 +97,29 @@ func openStage(t *Transfer) (*os.Root, error) {
 		return nil, e
 	}
 	defer root.Close()
-	if e = ensureDirectory(root, stageName(t.ID)); e != nil {
+	if e = ensureDirectory(root, ".handoff-partials"); e != nil {
 		return nil, e
 	}
-	return root.OpenRoot(stageName(t.ID))
+	partials, e := root.OpenRoot(".handoff-partials")
+	if e != nil {
+		return nil, e
+	}
+	defer partials.Close()
+	if e = validateStageDirectory(partials); e != nil {
+		return nil, e
+	}
+	if e = ensureDirectory(partials, t.ID); e != nil {
+		return nil, e
+	}
+	stage, e := partials.OpenRoot(t.ID)
+	if e != nil {
+		return nil, e
+	}
+	if e = validateStageDirectory(stage); e != nil {
+		stage.Close()
+		return nil, e
+	}
+	return stage, nil
 }
 func (r *Receiver) Accept(id, dest string) error {
 	r.mu.Lock()
@@ -347,6 +369,11 @@ func (r *Receiver) Finish(peer, id, digest string) error {
 		return err
 	}
 	defer stage.Close()
+	sf, err := stage.Open(".")
+	if err != nil {
+		return err
+	}
+	defer sf.Close()
 	for _, top := range roots(t.Manifest) {
 		old := t.Final[top]
 		_, stageErr := stage.Lstat(top)
@@ -398,7 +425,7 @@ func (r *Receiver) Finish(peer, id, digest string) error {
 				rf.Close()
 				return err
 			}
-			err = renameExclusive(rf, stageName(id)+"/"+top, candidate)
+			err = renameExclusive(sf, top, rf, candidate)
 			if errors.Is(err, os.ErrExist) {
 				continue
 			}

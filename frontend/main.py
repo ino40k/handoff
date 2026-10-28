@@ -23,7 +23,7 @@ def main():
         QQuickStyle.setStyle("Fusion")
     app = QApplication(sys.argv)
     app.setApplicationName("handoff")
-    app.setApplicationVersion("1.0.7")
+    app.setApplicationVersion("1.0.8")
     app.setQuitOnLastWindowClosed(False)
     app.setStyle("Fusion")
     windows_identity()

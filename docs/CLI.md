@@ -7,19 +7,19 @@ uses exactly the desktop engine's tailcat transport and protocol 1.
 
 ## Install and upgrade
 
-Install the [CLI release](https://github.com/ino40k/handoff/releases/tag/cli-v1.0.0)
+Install the [CLI release](https://github.com/ino40k/handoff/releases/tag/cli-v1.0.1)
 on a Linux x86-64 server with systemd:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://github.com/ino40k/handoff/releases/download/cli-v1.0.0/install-cli.sh | sudo sh
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/ino40k/handoff/releases/download/cli-v1.0.1/install-cli.sh | sudo sh
 ```
 
 For offline installation, copy `install-cli.sh`,
-`handoff-cli-1.0.0-linux-amd64.tar.gz`, and `SHA256SUMS-cli.txt` together to the
+`handoff-cli-1.0.1-linux-amd64.tar.gz`, and `SHA256SUMS-cli.txt` together to the
 server, then run this one installation command from that directory:
 
 ```sh
-sudo sh install-cli.sh --archive ./handoff-cli-1.0.0-linux-amd64.tar.gz --checksums ./SHA256SUMS-cli.txt
+sudo sh install-cli.sh --archive ./handoff-cli-1.0.1-linux-amd64.tar.gz --checksums ./SHA256SUMS-cli.txt
 ```
 
 The interactive installer reads prompts from the controlling terminal. It
@@ -240,8 +240,8 @@ GO=go bash scripts/build-cli.sh
 
 The package has a static Linux amd64 executable, unit template, uninstaller,
 license texts and this guide. The installer retains documentation and complete
-third-party notices under `/usr/local/share/doc/handoff-cli/`. Asset names and `cli-v1.0.0` tags are distinct from
-the desktop's `v1.0.7` assets. Desktop packaging and its version are unchanged.
+third-party notices under `/usr/local/share/doc/handoff-cli/`. Asset names and `cli-v1.0.1` tags are distinct from
+the desktop's `v1.0.8` assets. Desktop 1.0.8 contains the same engine security fixes.
 
 `.github/workflows/cli.yml` validates Go/race checks, installer syntax, real tailcat
 interoperability and restart tests; builds a deterministic archive/checksums;

@@ -11,7 +11,7 @@ python3 -m venv .build/venv
 .build/venv/bin/python scripts/render-icons.py
 .build/venv/bin/python -m PyInstaller --noconfirm --clean packaging/handoff.spec
 .build/venv/bin/python scripts/collect-licenses.py dist/handoff/_internal
-rpmbuild -bb --define "_topdir $root/.build/rpm" --define "bundle_dir $root/dist/handoff" --define "source_dir $root" --define '__brp_strip /bin/true' --define '__brp_strip_comment_note /bin/true' --define '__brp_python_bytecompile /bin/true' packaging/handoff.rpm.spec
+rpmbuild -bb --define "_topdir $root/.build/rpm" --define '_buildhost reproducible' --define "bundle_dir $root/dist/handoff" --define "source_dir $root" --define '__brp_strip /bin/true' --define '__brp_strip_comment_note /bin/true' --define '__brp_python_bytecompile /bin/true' packaging/handoff.rpm.spec
 cp .build/rpm/RPMS/x86_64/handoff-*.rpm dist/
-tar -C dist -czf dist/handoff-1.0.7-linux-x86_64.tar.gz handoff
+tar --sort=name --mtime='UTC 2026-01-01' --owner=0 --group=0 --numeric-owner -C dist -czf dist/handoff-1.0.8-linux-x86_64.tar.gz handoff
 sha256sum dist/*.rpm dist/*.tar.gz > dist/SHA256SUMS-linux.txt
